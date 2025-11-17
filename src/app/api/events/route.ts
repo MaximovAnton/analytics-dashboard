@@ -16,10 +16,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid event" }, { status: 400 });
     }
 
-    // connect producer (если не подключен)
     await producer.connect();
 
-    // отправляем в Kafka
     await producer.send({
       topic: "events",
       messages: [

@@ -1,24 +1,19 @@
-# 1. Base
 FROM node:20-alpine AS base
 WORKDIR /app
 
-# 2. Install deps
 FROM base AS deps
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# 3. Build
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-# 4. Production
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Copy standalone build
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
