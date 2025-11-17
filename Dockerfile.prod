@@ -5,6 +5,7 @@ WORKDIR /app
 # 2. Install deps
 FROM base AS deps
 COPY package.json package-lock.json ./
+COPY prisma ./prisma
 RUN npm ci
 
 # 3. Build
@@ -12,16 +13,23 @@ FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
+RUN npx prisma generate
 
-# 4. Production
+# 4. Production image
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Copy standalone build
+# Copy Next.js output
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
+
+# Copy Prisma schema (нужно для migrate в контейнере)
+COPY --from=build /app/prisma ./prisma
+
+# Copy .env
+COPY .env ./.env
 
 EXPOSE 3000
 CMD ["node", "server.js"]
